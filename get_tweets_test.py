@@ -1,11 +1,5 @@
-# Import the necessary package to process data in JSON format
-try:
-	import json
-except ImportError:
-	import simplejson as json
-
-# Import the necessary methods from "twitter" library
-from twitter import Twitter, OAuth, TwitterHTTPError, TwitterStream
+import tweepy
+import csv
 
 # Variables that contains the user credentials to access Twitter API 
 ACCESS_TOKEN = '860191806465744897-2FaIqC3FEjqc2BnhqNsjXuYN34AEjuR'
@@ -13,30 +7,36 @@ ACCESS_SECRET = '9rV4BEatXoOfPYoiUSvUgQ7zeRuevlQEQb6xux4FT2HKT'
 CONSUMER_KEY = '82Md1jsxRDwx8kWD1BqKucpaZ'
 CONSUMER_SECRET = 'zLLAeZ3LxfSJP8HSbuFg02Lo9V7aTqbPLuLfr1dp0Y8wwFa6Du'
 
-oauth = OAuth(ACCESS_TOKEN, ACCESS_SECRET, CONSUMER_KEY, CONSUMER_SECRET)
+auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
+api = tweepy.API(auth)
 
-# Initiate the connection to Twitter Streaming API
-twitter_stream = TwitterStream(auth=oauth)
+# Open/Create a file to append data
+csvFile = open('tweets.csv', 'a')
+#Use csv Writer
+csvWriter = csv.writer(csvFile)
 
-# Get a sample of the public data following through Twitter
-iterator = twitter_stream.statuses.sample()
-
-# Print each tweet in the stream to the screen 
-# Here we set it to stop after getting 1000 tweets. 
-# You don't have to set it to stop, but can continue running 
-# the Twitter API to collect data for days or even longer. 
-tweet_count = 10
-for tweet in iterator:
-	tweet_count -= 1
-	# Twitter Python Tool wraps the data returned by Twitter 
-	# as a TwitterDictResponse object.
-	# We convert it back to the JSON format to print/score
-	output_file = open("tweet_output.txt", "w")
-	output_file.write(json.dumps(tweet) + "\n")
-	print(json.dumps(tweet))
+def get_user_following(user_name):
+	user = api.get_user(user_name)
+	print("Friends of: " + user_name)
+	num_friends = 0
+	for friend in tweepy.Cursor(api.friends, id=user_name).items():
+		num_friends += 1
+		print(friend.screen_name)
+	print(num_friends)
 	
-	# The command below will do pretty printing for JSON data, try it out
-	# print json.dumps(tweet, indent=4)
-	   
-	if tweet_count <= 0:
-		break 
+def get_user_followers(user_name):
+	user = api.get_user(user_name)
+	print("Friends of: " + user_name)
+	num_friends = 0
+	for friend in tweepy.Cursor(api.followers, id=user_name).items():
+		num_friends += 1
+		print(friend.screen_name)
+	print(num_friends)
+
+def get_hashtag(hashtag, num_tweets): 
+	for tweet in tweepy.Cursor(api.search, q=hashtag, count=num_tweets, lang="en", since_id=1996).items():
+		print(tweet.created_at, tweet.text)
+		#csvWriter.writerow([tweet.created_at, tweet.text.encode('utf-8')])
+		
+get_user_followers("jbensal")
