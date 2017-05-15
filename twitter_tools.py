@@ -58,9 +58,17 @@ def get_user_followers(user_name):
 			break
 		num_following += 1
 		print(str(num_following) + ": " + follower.screen_name)
+		
+def get_num_user_followers(username):
+	user = api.get_user(user_name)
+	return user.followers_count
+	
+def get_num_user_following(username):
+	user = api.get_user(user_name)
+	return user.friends_count
 
-def get_hashtag(hashtag, num_tweets): 
-	for tweet in tweepy.Cursor(api.search, q=hashtag, count=num_tweets, lang="en", since_id=1996).items():
-		print(tweet.created_at, tweet.text)
+#def get_hashtag(hashtag, num_tweets): 
+#	for tweet in tweepy.Cursor(api.search, q=hashtag, count=num_tweets, lang="en", since_id=1996).items():
+#		print(tweet.created_at, tweet.text)
 		#csvWriter.writerow([tweet.created_at, tweet.text.encode('utf-8')])
 		
