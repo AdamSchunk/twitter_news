@@ -13,11 +13,6 @@ auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
 api = tweepy.API(auth)
 
-# Open/Create a file to append data
-csvFile = open('tweets.csv', 'a')
-#Use csv Writer
-csvWriter = csv.writer(csvFile)
-
 def timeout_safe_call(twitter_call, twitter_args = None):
 	try:
 		if twitter_args is None:
@@ -34,7 +29,7 @@ def timeout_safe_call(twitter_call, twitter_args = None):
 				time.sleep(1)
 				sys.stdout.write(str(j+1)+' ')
 				sys.stdout.flush()
-		return -2
+		return timeout_safe_call(twitter_call, twitter_args)
 	except StopIteration:
 		return -1
 		
@@ -47,8 +42,6 @@ def get_user_following(user_name):
 	following_list = tweepy.Cursor(api.friends, id=user_name).items()
 	while True:
 		following = timeout_safe_call(following_list.next)
-		if following == -2:
-			following = timeout_safe_call(following_list.next)
 		if following == -1:
 			break
 		num_following += 1
@@ -61,9 +54,6 @@ def get_user_followers(user_name):
 	followers_list = tweepy.Cursor(api.followers, id=user_name).items()
 	while True:
 		follower = timeout_safe_call(followers_list.next)
-		if follower == -2:
-			follower = timeout_safe_call(followers_list.next)
-			continue
 		if follower == -1:
 			break
 		num_following += 1
@@ -74,4 +64,3 @@ def get_hashtag(hashtag, num_tweets):
 		print(tweet.created_at, tweet.text)
 		#csvWriter.writerow([tweet.created_at, tweet.text.encode('utf-8')])
 		
-get_user_followers("realDonaldTrump")
