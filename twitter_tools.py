@@ -1,6 +1,7 @@
 import csv
 import sys
 import time
+import json
 import tweepy
 
 # Variables that contains the user credentials to access Twitter API 
@@ -38,25 +39,21 @@ def timeout_safe_call(twitter_call, twitter_args = None):
 def get_user_following(user_name):
 	user = api.get_user(user_name)
 	print("Friends of: " + user_name)
-	num_following = 0
 	following_list = tweepy.Cursor(api.friends, id=user_name).items()
 	while True:
 		following = timeout_safe_call(following_list.next)
 		if following == -1:
 			break
-		num_following += 1
 		print(str(num_following) + ": " + following.screen_name)
 	
 def get_user_followers(user_name):
 	user = api.get_user(user_name)
 	print("Friends of: " + user_name)
-	num_following = 0
 	followers_list = tweepy.Cursor(api.followers, id=user_name).items()
 	while True:
 		follower = timeout_safe_call(followers_list.next)
 		if follower == -1:
 			break
-		num_following += 1
 		print(str(num_following) + ": " + follower.screen_name)
 		
 def get_num_user_followers(username):
@@ -67,8 +64,16 @@ def get_num_user_following(username):
 	user = api.get_user(user_name)
 	return user.friends_count
 
-#def get_hashtag(hashtag, num_tweets): 
-#	for tweet in tweepy.Cursor(api.search, q=hashtag, count=num_tweets, lang="en", since_id=1996).items():
-#		print(tweet.created_at, tweet.text)
-		#csvWriter.writerow([tweet.created_at, tweet.text.encode('utf-8')])
+def get_hashtag_to_json(hashtag, num_tweets, output_file): 
+	output = open(output_file, "w")
+	tweet_iterator = tweepy.Cursor(api.search, q=hashtag, lang="en").items(num_tweets)
+	buff = []
+	while True:
+		tweet = timeout_safe_call(tweet_iterator.next)
+		filtered_tweet = 
+		if tweet == -1:
+			break
+		output.write(json.dumps(tweet._json, indent = 4, sort_keys=True))
+			
+get_hashtag_to_json("ccmm", 1, "output.txt")
 		
