@@ -7,3 +7,11 @@
 
 
 '''
+
+import sys
+from twitter_tools import Twitter_tools
+
+if __name__ == "__main__":
+	hashtag = sys.argv[1]
+	tt = Twitter_tools()
+	tt.get_hashtag_to_json(sys.argv[1], 1, "output.txt")
