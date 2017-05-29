@@ -4,7 +4,10 @@ import time
 import json
 import tweepy
 
-class Twitter_tools(object):
+from tweet_parser import Tweet_Parser
+from tweet_stream_listener import Tweet_Stream_Listener
+
+class Twitter_Tools(object):
 
 	def __init__(self):
 		# Variables that contains the user credentials to access Twitter API 
@@ -16,6 +19,9 @@ class Twitter_tools(object):
 		auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 		auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
 		self.api = tweepy.API(auth)
+		self.tweet_parser = Tweet_Parser()
+		
+		
 
 	def timeout_safe_call(self, twitter_call, twitter_args = None):
 		try:
@@ -67,50 +73,34 @@ class Twitter_tools(object):
 		user = self.api.get_user(user_name)
 		return user.friends_count
 
-	def get_hashtag_to_json(self, hashtag, num_tweets, output_file): 
-		output = open(output_file, "w")
-		tst_outpuut = open("sample_tweet.txt", "w")
-		tweet_iterator = tweepy.Cursor(self.api.search, q=hashtag, lang="en").items(num_tweets)
-		buff = []
+	def get_tweet_with_num_retweets(self, query, tweet_thresh):
+		StreamListener = Tweet_Stream_Listener(query, 0, tweet_thresh)
+		Stream = tweepy.Stream(auth=self.api.auth, listener = StreamListener)
+		Stream.filter(track=[query], async=True)
 		
-		#fields wanted:
-		# hashtag section
-		# in reply to
-		# retweet count
-		# retweet status -- might be original 
+		while not StreamListener.get_data():
+			pass
 		
+		tweet = StreamListener.get_data()[0]
+		print(tweet)
+		return tweet
+		
+	def trace_retweets(self, tweet):
+		tweets = self.search_past_tweets(tweet["text"], 3)
+		print(len(tweets))
+		self.tweet_parser.save_tweets_json(tweets, "output.txt")
+	
+	def init_stream_search(self, search_term):
+		self.Stream.filter(track=[seach_term], async=True )
+	
+	def search_past_tweets(self, seach_term, num_tweets): 
+		tweet_iterator = tweepy.Cursor(self.api.search, q=seach_term, lang="en").items()
+		filtered_tweets = []
 		while True:
 			tweet = self.timeout_safe_call(tweet_iterator.next)
 			if tweet == -1:
 				break
-			print(type(tweet))
-			tst_outpuut.write(json.dumps(tweet._json, indent = 4, sort_keys=True))
-
-			tweet_dict = tweet._json
+			filtered_tweet = self.tweet_parser.parse_tweet(tweet)
+			filtered_tweets.append(filtered_tweet)
 			
-			filtered_tweet = {}
-			filtered_tweet["text"] = tweet_dict["text"]
-			filtered_tweet["in_reply_to_screen_name"] = tweet_dict["in_reply_to_screen_name"]
-			filtered_tweet["retweet_count"] = tweet_dict["retweet_count"]
-			filtered_tweet["retweeted"] = tweet_dict["retweeted"]
-
-			user_dict = tweet_dict["user"]
-			filtered_user = {}
-			filtered_user["screen_name"] = user_dict["screen_name"]
-			filtered_user["followers_count"] = user_dict["followers_count"]
-			filtered_user["friends_count"] = user_dict["friends_count"]
-			
-			
-			filtered_retweet = {}
-			if "retweeted_status" in tweet_dict.keys():
-				retweet_dict = tweet_dict["retweeted_status"]
-				filtered_retweet["retweet_count"] = retweet_dict["retweet_count"]
-				filtered_retweet["retweeted_from"] = retweet_dict["user"]["screen_name"]
-			
-			
-			
-			filtered_tweet["retweeted_status"] = filtered_retweet
-			filtered_tweet["user"] = filtered_user
-			
-			output.write(json.dumps(filtered_tweet, indent = 4, sort_keys=True))
-		
+		return filtered_tweets

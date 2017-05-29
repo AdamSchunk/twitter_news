@@ -9,9 +9,11 @@
 '''
 
 import sys
-from twitter_tools import Twitter_tools
+from twitter_tools import Twitter_Tools
 
 if __name__ == "__main__":
-	hashtag = sys.argv[1]
-	tt = Twitter_tools()
-	tt.get_hashtag_to_json(sys.argv[1], 1, "output.txt")
+	tweet_thresh = int(sys.argv[2])
+	query = sys.argv[1]
+	tt = Twitter_Tools()
+	tweet = tt.get_tweet_with_num_retweets(query, tweet_thresh)
+	tt.trace_retweets(tweet)
