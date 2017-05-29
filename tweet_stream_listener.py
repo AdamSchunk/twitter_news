@@ -25,6 +25,8 @@ class Tweet_Stream_Listener(tweepy.StreamListener):
 		
 	def on_error(self, status_code):
 		if status_code == 420:
+			print("streaming api call limit reached")
+			#TODO deal with this case and make it more robust
 			return False
 		
 	

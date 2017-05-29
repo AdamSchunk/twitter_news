@@ -39,6 +39,7 @@ class Twitter_Tools(object):
 					time.sleep(1)
 					sys.stdout.write(str(j+1)+' ')
 					sys.stdout.flush()
+			print("resuming")
 			return self.timeout_safe_call(twitter_call, twitter_args)
 		except StopIteration:
 			return -1
@@ -73,7 +74,7 @@ class Twitter_Tools(object):
 		user = self.api.get_user(user_name)
 		return user.friends_count
 
-	def get_tweet_with_num_retweets(self, query, tweet_thresh):
+	def find_tweet_with_num_retweets(self, query, tweet_thresh):
 		StreamListener = Tweet_Stream_Listener(query, 0, tweet_thresh)
 		Stream = tweepy.Stream(auth=self.api.auth, listener = StreamListener)
 		Stream.filter(track=[query], async=True)
@@ -86,17 +87,22 @@ class Twitter_Tools(object):
 		return tweet
 		
 	def trace_retweets(self, tweet):
-		tweets = self.search_past_tweets(tweet["text"], 3)
+		print("finding past tweets")
+		tweets = self.search_past_tweets(tweet["text"])
 		print(len(tweets))
 		self.tweet_parser.save_tweets_json(tweets, "output.txt")
 	
 	def init_stream_search(self, search_term):
-		self.Stream.filter(track=[seach_term], async=True )
+		self.Stream.filter(track=[seach_term], async=True)
 	
-	def search_past_tweets(self, seach_term, num_tweets): 
+	def search_past_tweets(self, seach_term): 
 		tweet_iterator = tweepy.Cursor(self.api.search, q=seach_term, lang="en").items()
 		filtered_tweets = []
+		i = 0
 		while True:
+			i += 1
+			if 1%100 == 0:
+				print( str(i) + " tweets found")
 			tweet = self.timeout_safe_call(tweet_iterator.next)
 			if tweet == -1:
 				break
