@@ -18,7 +18,7 @@ class Tweet_Stream_Listener(tweepy.StreamListener):
 	def on_status(self, status):
 		filtered_tweet = self.tweet_parser.parse_tweet(status)
 		num_retweets = int(filtered_tweet["retweeted_status"]["retweet_count"])
-		if (self.mode == 0 and num_retweets >= self.tweet_thresh):
+		if (self.mode == 0 and num_retweets >= self.tweet_thresh and num_retweets <= self.tweet_thresh * 1.25):
 			self.data.append(filtered_tweet)
 			#print(filtered_tweet)
 			return False
