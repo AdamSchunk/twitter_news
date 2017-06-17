@@ -4,6 +4,10 @@ import time
 import json
 import tweepy
 
+
+from os import listdir
+from os.path import isfile, join
+from datetime import datetime
 from tweet_parser import Tweet_Parser
 from tweet_stream_listener import Tweet_Stream_Listener
 
@@ -21,7 +25,7 @@ class Twitter_Tools(object):
 		self.api = tweepy.API(auth)
 		self.tweet_parser = Tweet_Parser()
 		
-		
+	
 
 	def timeout_safe_call(self, twitter_call, twitter_args = None):
 		try:
@@ -32,13 +36,9 @@ class Twitter_Tools(object):
 			else:
 				res = twitter_call(twitter_args)
 		except tweepy.TweepError:    
-			print("******sleeping until more requests available (15 min)*******")
-			for i in range(0,15): 
-				print("\n****" + str(15-i) + "min remaining****") 
-				for j in range(0,61): #yes this is longer than 1 minute, but the 15 second buffer prevents this from running twice
-					time.sleep(1)
-					sys.stdout.write(str(j+1)+' ')
-					sys.stdout.flush()
+			print("******sleeping until more requests available (16 min)*******")
+			print("current time: " + datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
+			time.sleep(60*16)
 			print("resuming")
 			return self.timeout_safe_call(twitter_call, twitter_args)
 		except StopIteration:
@@ -46,33 +46,35 @@ class Twitter_Tools(object):
 			
 		return res
 			
-	def get_user_is_following(self, user_name):
+	def print_tweets_from_user(self, user_name):
 		user = self.api.get_user(user_name)
-		print(user_name + "is following")
-		following_list = tweepy.Cursor(self.api.friends, id=user_name).items()
-		while True:
-			following = self.timeout_safe_call(following_list.next)
-			if following == -1:
-				break
-			print(following.screen_name)
+		for status in tweepy.Cursor(self.api.user_timeline, id=user_name).items(10):
+			tweet = self.tweet_parser.parse_tweet(status)
+			print(tweet)
+		
+			
+	def save_user_is_following(self, user_name):
+		indexed_users = [f for f in listdir("users") if isfile(join("users", f))]
+		if(user_name not in indexed_users):
+			output_file = open("users/" + str(user_name), "w")
+			following_list = tweepy.Cursor(self.api.friends_ids, id=user_name, count=5000).items()
+			while True:
+				user = self.timeout_safe_call(following_list.next)
+				if user == -1:
+					break
+				output_file.write(str(user) + "\n")
 		
 	def get_is_following_user(self, user_name):
-		user = self.api.get_user(user_name)
 		print("Friends of: " + user_name)
-		followers_list = tweepy.Cursor(self.api.followers, id=user_name).items()
+		followers_list = tweepy.Cursor(self.api.followers_ids, id=user_name, count=5000).items()
+		i = 0
 		while True:
-			follower = self.timeout_safe_call(followers_list.next)
-			if follower == -1:
+			user = self.timeout_safe_call(followers_list.next)
+			if user == -1:
 				break
-			print(follower.screen_name)
+			i = i+1
+			print(i)
 			
-	def get_num_user_followers(self, username):
-		user = api.get_user(user_name)
-		return user.followers_count
-		
-	def get_num_user_following(self, username):
-		user = self.api.get_user(user_name)
-		return user.friends_count
 
 	def find_tweet_with_num_retweets(self, query, tweet_thresh):
 		StreamListener = Tweet_Stream_Listener(query, 0, tweet_thresh)
@@ -82,18 +84,24 @@ class Twitter_Tools(object):
 		while not StreamListener.get_data():
 			pass
 		
+		already_seen_tweets = [f for f in listdir("tweet_searches") if isfile(join("tweet_searches", f))]
 		tweet = StreamListener.get_data()[0]
-		print(tweet)
+		
+		if tweet["retweeted_status"]["retweet_id"] not in already_seen_tweets:
+			output_file = "tweet_searches/" + str(tweet["retweeted_status"]["retweet_id"])
+			self.tweet_parser.save_tweets_json(tweet, output_file)
+		
 		return tweet
 		
 	def trace_retweets(self, tweet):
 		print("finding past tweets")
 		tweets = self.search_past_tweets(tweet["text"])
 		print(len(tweets))
-		self.tweet_parser.save_tweets_json(tweets, "output.txt")
+		output_file = "tweet_search_results/" + datetime.now().strftime('%Y-%m-%d_%H-%M')
+		self.tweet_parser.save_tweets_json(tweets, output_file)
 	
 	def init_stream_search(self, search_term):
-		self.Stream.filter(track=[seach_term], async=True)
+		self.Stream.filter(lang="en", track=[seach_term], async=True)
 	
 	def search_past_tweets(self, seach_term): 
 		tweet_iterator = tweepy.Cursor(self.api.search, q=seach_term, lang="en").items()
