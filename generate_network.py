@@ -8,13 +8,15 @@
 
 '''
 
+import os
 import sys
 import json
 import networkx as nx
 import matplotlib.pyplot as plt
+
+
 from twitter_tools import Twitter_Tools
-
-
+	
 	
 	
 def gen_network_from_tweets(tweet_file):
@@ -41,11 +43,26 @@ def gen_network_from_tweets(tweet_file):
 	plt.show()
 	#use networkx for all of the netwrork stuff
 	
-	
+def generate_retweet_files():
+	tweet = tt.find_tweet_with_num_retweets(query, tweet_thresh)
+	if tweet:
+		tt.trace_retweets(tweet)
+	else:
+		print("tweet already seen" + str(tweet["retweeted_status"]["id"]))
+		
+
+def gen_new_user_files():
+	for retweets_file in os.listdir("tweet_search_results"):
+		retweet_list_file = open("tweet_search_results/" + retweets_file, "r")
+		retweet_list = json.load(retweet_list_file)
+		for retweet in retweet_list:
+			tt.save_user_is_following(retweet["user"]["id"])
+
+		
 if __name__ == "__main__":
 	tweet_thresh = int(sys.argv[2])
 	query = sys.argv[1]
 	tt = Twitter_Tools()
-	tweet = tt.find_tweet_with_num_retweets(query, tweet_thresh)
-	tt.trace_retweets(tweet)
-	gen_network_from_tweets("output.txt")
+	generate_retweet_files()
+	gen_new_user_files()
+	#gen_network_from_tweets("output.txt")
