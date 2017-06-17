@@ -1,2 +1,5 @@
 *.txt
 __pycache__/
+tweet_searches/
+tweet_search_results/
+users/
