@@ -1,5 +1,6 @@
 import tweepy
 
+import time
 from tweet_parser import Tweet_Parser
 
 class Tweet_Stream_Listener(tweepy.StreamListener):
@@ -26,6 +27,7 @@ class Tweet_Stream_Listener(tweepy.StreamListener):
 	def on_error(self, status_code):
 		if status_code == 420:
 			print("streaming api call limit reached")
+			time.sleep(60*16)
 			#TODO deal with this case and make it more robust
 			return False
 		
