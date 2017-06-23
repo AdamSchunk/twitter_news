@@ -1,4 +1,6 @@
 *.txt
+.7z
+.zip
 __pycache__/
 tweet_searches/
 tweet_search_results/
