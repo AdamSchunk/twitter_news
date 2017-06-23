@@ -6,7 +6,12 @@ class Tweet_Parser(object):
 	def save_tweets_json(self, tweets, output_file):
 		output = open(output_file, "w")
 		output.write(json.dumps(tweets, indent = 4, sort_keys=True))
-		
+	
+	def load_tweets_json(self, file):
+		retweet_file = open("tweet_search_results/" + file, "r")
+		return json.load(retweet_list_file)
+		 
+	
 	def add_tweets_to_file(self, tweets, output_file):
 		output = open(output_file, "r")
 		old_data = json.loads(output)
@@ -18,6 +23,7 @@ class Tweet_Parser(object):
 		
 	def format_text(self, text):
 		text = re.sub(r'https?:\/\/.*[\r\n]*', '', text, flags=re.MULTILINE)
+		text = re.sub(r'^RT ', '', text, flags=re.MULTILINE)
 		return(text)
 	
 	def parse_tweet(self, unfiltered_tweet):
@@ -33,6 +39,7 @@ class Tweet_Parser(object):
 		filtered_tweet = {}
 		filtered_tweet["id"] = tweet_dict["id"]
 		filtered_tweet["created_at"] = tweet_dict["created_at"]
+		filtered_tweet["text"] = self.format_text(tweet_dict["text"])
 		
 		filtered_tweet["in_reply_to_screen_name"] = tweet_dict["in_reply_to_screen_name"]
 		filtered_tweet["retweet_count"] = tweet_dict["retweet_count"]
@@ -47,7 +54,6 @@ class Tweet_Parser(object):
 		
 		filtered_retweet = {}
 		if "retweeted_status" in tweet_dict.keys():
-			filtered_tweet["text"] = self.format_text(tweet_dict["retweeted_status"]["text"])
 			filtered_retweet["retweet_id"] = tweet_dict["retweeted_status"]["id"]
 			filtered_retweet["retweet_count"] = tweet_dict["retweeted_status"]["retweet_count"]
 			filtered_retweet["retweeted_from"] = tweet_dict["retweeted_status"]["user"]["screen_name"]
