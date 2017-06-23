@@ -1,7 +1,7 @@
 *.txt
-.7z
-.zip
-.csv
+*.7z
+*.zip
+*.csv
 __pycache__/
 tweet_searches/
 tweet_search_results/
