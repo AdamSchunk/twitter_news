@@ -46,27 +46,27 @@ def gen_network_from_tweets(tweet_file):
 	previous_retweeters = []
 	for tweet in tweets:
 		data = {}
-		curr_user = str(tweet["user"]["id"])
+		curr_user_id = str(tweet["user"]["id"])
 		
-		data['user'] = curr_user
+		data['user'] = tweet["user"]
 		data['time_ms'] = ms_from_created_at(tweet["created_at"])
 		
 		#generate list of who they could have seen the tweet from
 		seen_from = []
-		followers_file = open("users/" + str(curr_user),"r")
+		followers_file = open("users/" + curr_user_id,"r")
 		following_list = followers_file.read().splitlines()
 		for following in following_list:
 			if following in previous_retweeters:
 				seen_from.append(following)
 					
 		data['seen_from'] = seen_from
-		previous_retweeters.append(curr_user)
+		previous_retweeters.append(curr_user_id)
 		data_list.append(data)
 	
 	#returns with earliest tweet as entry 0
 	return list(reversed(data_list))
 
-def graph_time(data_list):
+def graph_tweets_vs_time(data_list):
 	time_ms = [d['time_ms'] for d in data_list]
 	x = time_ms
 	y = []
@@ -77,10 +77,34 @@ def graph_time(data_list):
 	plt.plot(x,y)
 	plt.show()
 	
+def graph_previous_views_vs_time(data_list):
+	time_ms = [d['time_ms'] for d in data_list]
+	seen_from_list = [d['seen_from'] for d in data_list]
+	x = time_ms
+	y = []
+	
+	for i in range(0,len(time_ms)):
+		y.append(len(seen_from_list[i]))
+	
+	plt.plot(x,y)
+	plt.show()
+	
+def graph_followers_vs_time(data_list):
+	time_ms = [d['time_ms'] for d in data_list]
+	followers_list = [d['user']["followers_count"] for d in data_list]
+	x = time_ms
+	y = []
+	
+	for i in range(0,len(time_ms)):
+		y.append(followers_list[i])
+	
+	plt.plot(x,y)
+	plt.show()
+	
 if __name__ == "__main__":
 	file_name = sys.argv[1]
 	#gen_network_from_tweets(file_name)
 	data_list = gen_network_from_tweets(file_name)
-	graph_time(data_list)
+	graph_followers_vs_time(data_list)
 	#ms_from_created_at("Sat Jun 17 03:05:08 +0000 2017")
 	
