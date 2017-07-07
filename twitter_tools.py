@@ -104,8 +104,6 @@ class Twitter_Tools(object):
 			already_seen_tweets = [f for f in listdir("tweet_searches") if isfile(join("tweet_searches", f))]
 			tweet = StreamListener.get_data()[0]
 			
-			print(already_seen_tweets)
-			
 			if str(tweet["retweeted_status"]["retweet_id"]) not in already_seen_tweets:
 				output_file = "tweet_searches/" + str(tweet["retweeted_status"]["retweet_id"])
 				self.tweet_parser.save_tweets_json(tweet, output_file)
