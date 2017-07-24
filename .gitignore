@@ -7,3 +7,4 @@ tweet_searches/
 tweet_search_results/
 users/
 completed_retweet_files/
+analysis/*

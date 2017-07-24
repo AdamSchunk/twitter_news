@@ -21,28 +21,7 @@ from twitter_tools import Twitter_Tools
 	
 	
 	
-def gen_network_from_tweets(tweet_file):
-	input = open(tweet_file, "r")
-	tweets = json.load(input)
-	users = []
-	nodes = set()
-	graph = nx.Graph()
-	edges = []
 
-	for tweet in tweets:
-		users.append(str(tweet["user"]["id"]))
-		graph.add_node(str(tweet["user"]["id"]))
-	
-	
-	for curr_user in users:
-		followers_file = open("users/" + str(curr_user),"r")
-		following = followers_file.read().splitlines()
-		for potentially_following in users:
-			if potentially_following in following:
-				graph.add_edge(curr_user, potentially_following)
-	
-	nx.write_edgelist(graph, "test.edgelist")
-	#use networkx for all of the netwrork stuff
 	
 def generate_retweet_files(num_files, query, tweet_thresh):
 	for i in range(num_files):
@@ -77,10 +56,10 @@ def gen_new_user_files():
 		
 		
 if __name__ == "__main__":
-	tweet_thresh = int(sys.argv[2])
-	query = sys.argv[1]
+	#tweet_thresh = int(sys.argv[2])
+	#query = sys.argv[1]
 	tt = Twitter_Tools()
-	#generate_retweet_files(4, query, tweet_thresh)
+	#generate_retweet_files(4, "trump", 2000)
 	#tt.save_user_is_following("34051134")	
 	gen_new_user_files()
 	

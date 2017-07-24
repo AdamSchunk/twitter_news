@@ -26,7 +26,12 @@ class Twitter_Tools(object):
 		self.api = tweepy.API(auth)
 		self.tweet_parser = Tweet_Parser()
 		
-	
+	def do_sleep(self):
+		print("******sleeping until more requests available (16 min)*******")
+		print("current time: " + datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
+		time.sleep(60*16)
+		print("resuming")
+		
 
 	def timeout_safe_call(self, twitter_call, twitter_args = None):
 		try:
@@ -37,18 +42,18 @@ class Twitter_Tools(object):
 			else:
 				res = twitter_call(twitter_args)
 		except tweepy.RateLimitError as e:
-			print("******sleeping until more requests available (16 min)*******")
-			print("current time: " + datetime.now().strftime('%Y-%m-%d_%H:%M:%S'))
-			time.sleep(60*16)
-			print("resuming")
+			self.do_sleep()
 			return self.timeout_safe_call(twitter_call, twitter_args)
-			
 		except tweepy.TweepError as e:
-			print(e)
-			return -2
+			if str(e) == "Twitter error response: status code = 429":
+				print("edge")
+				self.do_sleep()
+				return self.timeout_safe_call(twitter_call, twitter_args)
+			else:
+				return -2
 		except StopIteration:
 			return -1
-			
+		
 		return res
 			
 	def print_tweets_from_user(self, user_name):
