@@ -17,16 +17,17 @@ def gen_network_graph_from_tweets(tweet_file):
 	edges = []
 
 	for tweet in tweets:
-		users.append(str(tweet["user"]["id"]))
+		users.append(tweet["user"]["id"])
 		graph.add_node(tweet["user"]["id"])
 	
 	
 	for curr_user in users:
-		followers_file = open("users/" + str(curr_user),"r")
-		following = followers_file.read().splitlines()
-		for potentially_following in users:
-			if potentially_following in following:
-				graph.add_edge(curr_user, potentially_following)
+		following_file = open("users/" + str(curr_user),"r")
+		following_list = following_file.read().splitlines()
+		for following in following_list:
+			following_int = int(following)
+			if graph.has_node(following_int):
+				graph.add_edge(curr_user, following_int)
 	
 	return graph
 	#use networkx for all of the netwrork stuff
@@ -90,6 +91,14 @@ def gen_network_from_tweets(tweet_file):
 	return list(reversed(data_list))
 
 def graph_tweets_vs_time(data_list, file_name):
+	directory = "analysis/images/tweets_vs_time/"
+	
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+	
+	if os.path.exists(directory + file_name):
+		return
+	
 	time_ms = [d['time_ms'] for d in data_list]
 	x = time_ms
 	y = []
@@ -98,7 +107,7 @@ def graph_tweets_vs_time(data_list, file_name):
 		y.append(i)
 	
 	plt.plot(x,y)
-	plt.savefig("analysis/images/tweets_vs_time/" + file_name)
+	plt.savefig(directory + file_name)
 	plt.clf()
 	
 def graph_previous_views_vs_time(data_list, file_name):
@@ -138,17 +147,27 @@ def graph_clustering_vs_time(graph, data_list, file_name):
 	plt.savefig("analysis/images/clustering_vs_time/" + file_name)
 	
 def graph_degree_vs_time(graph, data_list, file_name):
+	directory = "analysis/images/degree_vs_time/"
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+	
+	if os.path.exists(directory + file_name):
+		return
+		
+		
 	time_ms = [d['time_ms'] for d in data_list]	
-	users = [str(d["user"]["id"]) for d in data_list]
+	users = [d["user"]["id"] for d in data_list]
 	x = time_ms
 	y = []
 	
 	for user in users:
-		print(nx.info(graph, user))
 		y.append(nx.degree(graph, user))
 		
 	plt.plot(x,y)
-	plt.savefig("analysis/images/degree_vs_time/" + file_name)
+	
+	
+	plt.savefig(directory + file_name)
+	plt.clf()
 	
 if __name__ == "__main__":
 	data_dir = "tweet_search_results/"
@@ -157,5 +176,6 @@ if __name__ == "__main__":
 		print(file)
 		graph = gen_network_graph_from_tweets(data_dir + file)
 		data_list = gen_network_from_tweets(data_dir + file)
+		graph_tweets_vs_time(data_list, file + ".png")
 		graph_degree_vs_time(graph, data_list, file + ".png")
 	
