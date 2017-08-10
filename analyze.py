@@ -87,7 +87,7 @@ def gen_network_from_tweets(tweet_file):
 		data['seen_from'] = seen_from
 		previous_retweeters.append(curr_user_id)
 		data_list.append(data)
-	
+		print(data)
 	#returns with earliest tweet as entry 0
 	return list(reversed(data_list))
 
@@ -234,8 +234,17 @@ def analyze_high_follower_nodes(graph, data_list, file_name):
 	x = time_ms
 	y = []
 	
+	large_nodes = []
+	
 	for num_followers in followers_count_list:
 		y.append(num_followers)
+		
+	avg_followers = sum(y)/len(y)
+	
+	for i, num_followers in enumerate(y):
+		if num_followers >= avg_followers * 3:
+			pass
+			
 	
 	plt.plot(x,y)
 	plt.savefig(directory + "/" + file_name)
@@ -247,7 +256,7 @@ def find_jumps(x, y, data_list):
 		slopes.append((y[i]-y[i-1])/(x[i]-x[i-1]))
 
 	for i, slope in enumerate(slopes):
-		
+		pass
 	
 def analyze_jumps(graph, data_list, file_name): #look at who retweeted from the large nodes
 	#TODO: work on this funciton
