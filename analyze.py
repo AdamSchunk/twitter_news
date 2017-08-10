@@ -255,7 +255,7 @@ def analyze_high_follower_nodes(graph, data_list, file_name):
 		
 		if large_nodes:
 			closest = dists.index(min(dists))
-			delta_ts.append(large_nodes[closest]["time_ms"] - time_ms[i])
+			delta_ts.append(time_ms[i]- large_nodes[closest]["time_ms"] )
 		else:
 			delta_ts.append(1)
 		
@@ -269,14 +269,12 @@ def analyze_high_follower_nodes(graph, data_list, file_name):
 	dt_norm = []
 	
 	for dt in delta_ts:
+		print(dt)
 		dt_norm.append((dt-min_dt)/(max_dt-min_dt))
-	
-	print(len(x))
-	print(len(y))
-	print(len(dt_norm))
+
 	
 	for i in range(len(x)):
-		plt.plot((x[i],y[i])) #, color=(dt_norm[i], 0, dt_norm[i])
+		plt.plot([x[i]],[y[i]], marker = 'o', color=(dt_norm[i], 0, dt_norm[i]))
 	
 	plt.savefig(directory + file_name)
 	plt.clf()			
