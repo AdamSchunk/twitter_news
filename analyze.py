@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import time
+import math
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -97,6 +98,7 @@ def graph_tweets_vs_time(data_list, file_name):
 		os.makedirs(directory)
 	
 	if os.path.exists(directory + file_name):
+		print("tweets vs time already saved")
 		return
 	
 	time_ms = [d['time_ms'] for d in data_list]
@@ -123,18 +125,26 @@ def graph_previous_views_vs_time(data_list, file_name):
 	plt.show()
 	
 def graph_followers_vs_time(data_list, file_name):
+	directory = "analysis/images/followers_vs_time/"
+	if not os.path.exists(directory):
+		os.makedirs(directory)
 	time_ms = [d['time_ms'] for d in data_list]
-	followers_list = [d['user']["followers_count"] for d in data_list]
+	followers_count_list = [d['user']["followers_count"] for d in data_list]
 	x = time_ms
 	y = []
 	
-	for i in range(0,len(time_ms)):
-		y.append(followers_list[i])
+	for num_followers in followers_count_list:
+		y.append(num_followers)
 	
 	plt.plot(x,y)
-	plt.savefig("analysis/images/followers_vs_time/" + file_name)
+	plt.savefig(directory + "/" + file_name)
+	plt.clf()
 	
 def graph_clustering_vs_time(graph, data_list, file_name):
+	directory = "analysis/images/clustering_vs_time/"
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+		
 	time_ms = [d['time_ms'] for d in data_list]	
 	users = [d["user"]["id"] for d in data_list]
 	x = time_ms
@@ -144,7 +154,8 @@ def graph_clustering_vs_time(graph, data_list, file_name):
 		y.append(nx.clustering(graph,user))
 		
 	plt.plot(x,y)
-	plt.savefig("analysis/images/clustering_vs_time/" + file_name)
+	plt.savefig(directory + file_name)
+	plt.clf()
 	
 def graph_degree_vs_time(graph, data_list, file_name):
 	directory = "analysis/images/degree_vs_time/"
@@ -152,6 +163,7 @@ def graph_degree_vs_time(graph, data_list, file_name):
 		os.makedirs(directory)
 	
 	if os.path.exists(directory + file_name):
+		print("degree vs time already saved")
 		return
 		
 		
@@ -169,6 +181,50 @@ def graph_degree_vs_time(graph, data_list, file_name):
 	plt.savefig(directory + file_name)
 	plt.clf()
 	
+def graph_avg_diam_vs_time(graph, data_list, file_name):
+	directory = "analysis/images/diam_vs_time/"
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+	
+	if os.path.exists(directory + file_name):
+		pass
+		#return
+		
+		
+	time_ms = [d['time_ms'] for d in data_list]	
+	times_to_remove = []
+	users = [d["user"]["id"] for d in data_list]
+	x = time_ms[1:]
+	y5 = []
+	y10 = []
+	y15 = []
+	y20 = []
+	prev_users = [users[0]]
+	for i, user in enumerate(users[1:]):
+		dists = []
+		#if nx.degree(graph, user) == 0:
+		#	times_to_remove.append(i)
+		#	continue
+		for prev_user in prev_users[-10:]:
+			try:
+				dist = len(nx.shortest_path(graph, user, prev_user))
+			except:
+				dist = len(users)
+			dists.append(dist)
+
+			
+		y5.append(sum(dists)/len(dists))
+		prev_users.append(user)
+		
+	#for time in sorted(times_to_remove, reverse=True):
+	#	del x[time]
+		
+	plt.plot(x,y5)
+	
+	
+	plt.savefig(directory + file_name)
+	plt.clf()
+	
 if __name__ == "__main__":
 	data_dir = "tweet_search_results/"
 	analysis_dir = "analysis/"
@@ -178,4 +234,7 @@ if __name__ == "__main__":
 		data_list = gen_network_from_tweets(data_dir + file)
 		graph_tweets_vs_time(data_list, file + ".png")
 		graph_degree_vs_time(graph, data_list, file + ".png")
+		graph_clustering_vs_time(graph, data_list, file + "png")
+		graph_avg_diam_vs_time(graph, data_list, file + ".png")
+		graph_followers_vs_time(data_list, file + ".png")
 	
