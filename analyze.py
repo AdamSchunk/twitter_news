@@ -225,6 +225,49 @@ def graph_avg_diam_vs_time(graph, data_list, file_name):
 	plt.savefig(directory + file_name)
 	plt.clf()
 	
+def analyze_high_follower_nodes(graph, data_list, file_name):
+	directory = "analysis/images/followers_tweets_vs_time/"
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+	time_ms = [d['time_ms'] for d in data_list]
+	followers_count_list = [d['user']["followers_count"] for d in data_list]
+	x = time_ms
+	y = []
+	
+	for num_followers in followers_count_list:
+		y.append(num_followers)
+	
+	plt.plot(x,y)
+	plt.savefig(directory + "/" + file_name)
+	plt.clf()
+	
+def find_jumps(x, y, data_list):
+	slopes = []
+	for i, tweet in enumerate(y[1:]):
+		slopes.append((y[i]-y[i-1])/(x[i]-x[i-1]))
+
+	for i, slope in enumerate(slopes):
+		
+	
+def analyze_jumps(graph, data_list, file_name): #look at who retweeted from the large nodes
+	#TODO: work on this funciton
+	directory = "analysis/images/jump_analysis/"
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+	
+	if os.path.exists(directory + file_name):
+		print("degree vs time already saved")
+		return
+		
+		
+	time_ms = [d['time_ms'] for d in data_list]
+	x = time_ms
+	y = []
+	
+	for i in range(0,len(time_ms)):
+		y.append(i)
+
+
 if __name__ == "__main__":
 	data_dir = "tweet_search_results/"
 	analysis_dir = "analysis/"
