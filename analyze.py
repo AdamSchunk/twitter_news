@@ -78,8 +78,8 @@ def gen_network_from_tweets(tweet_file):
 		
 		#generate list of who they could have seen the tweet from
 		seen_from = []
-		followers_file = open("users/" + curr_user_id,"r")
-		following_list = followers_file.read().splitlines()
+		following_file = open("users/" + curr_user_id,"r")
+		following_list = following_file.read().splitlines()
 		for following in following_list:
 			if following in previous_retweeters:
 				seen_from.append(following)
@@ -87,7 +87,7 @@ def gen_network_from_tweets(tweet_file):
 		data['seen_from'] = seen_from
 		previous_retweeters.append(curr_user_id)
 		data_list.append(data)
-		print(data)
+		following_file.close()
 	#returns with earliest tweet as entry 0
 	return list(reversed(data_list))
 
@@ -196,9 +196,6 @@ def graph_avg_diam_vs_time(graph, data_list, file_name):
 	users = [d["user"]["id"] for d in data_list]
 	x = time_ms[1:]
 	y5 = []
-	y10 = []
-	y15 = []
-	y20 = []
 	prev_users = [users[0]]
 	for i, user in enumerate(users[1:]):
 		dists = []
@@ -226,29 +223,66 @@ def graph_avg_diam_vs_time(graph, data_list, file_name):
 	plt.clf()
 	
 def analyze_high_follower_nodes(graph, data_list, file_name):
+
 	directory = "analysis/images/followers_tweets_vs_time/"
 	if not os.path.exists(directory):
 		os.makedirs(directory)
+		
 	time_ms = [d['time_ms'] for d in data_list]
 	followers_count_list = [d['user']["followers_count"] for d in data_list]
+	users = [d["user"]["id"] for d in data_list]
 	x = time_ms
 	y = []
 	
+	for i in range(0,len(time_ms)):
+		y.append(i)
+	
 	large_nodes = []
-	
-	for num_followers in followers_count_list:
-		y.append(num_followers)
 		
-	avg_followers = sum(y)/len(y)
+	avg_followers = sum(followers_count_list)/len(followers_count_list)
+	std = np.std(followers_count_list)
+
+	delta_ts = []
 	
-	for i, num_followers in enumerate(y):
-		if num_followers >= avg_followers * 3:
-			pass
+	for i, user in enumerate(users):
+		num_followers = followers_count_list[i]
+		dists = []
+		for large_node in large_nodes:
+			try:
+				dists.append(len(nx.shortest_path(graph, user, prev_user)))
+			except:
+				dists.append(len(users))
+		
+		if large_nodes:
+			closest = dists.index(min(dists))
+			delta_ts.append(large_nodes[closest]["time_ms"] - time_ms[i])
+		else:
+			delta_ts.append(1)
+		
+		if num_followers >= avg_followers + std*2:
+			large_nodes.append(data_list[i])
 			
 	
-	plt.plot(x,y)
-	plt.savefig(directory + "/" + file_name)
-	plt.clf()
+	max_dt = max(delta_ts)
+	min_dt = min(delta_ts)
+	
+	dt_norm = []
+	
+	for dt in delta_ts:
+		dt_norm.append((dt-min_dt)/(max_dt-min_dt))
+	
+	print(len(x))
+	print(len(y))
+	print(len(dt_norm))
+	
+	for i in range(len(x)):
+		plt.plot((x[i],y[i])) #, color=(dt_norm[i], 0, dt_norm[i])
+	
+	plt.savefig(directory + file_name)
+	plt.clf()			
+		
+		
+	
 	
 def find_jumps(x, y, data_list):
 	slopes = []
@@ -285,8 +319,9 @@ if __name__ == "__main__":
 		graph = gen_network_graph_from_tweets(data_dir + file)
 		data_list = gen_network_from_tweets(data_dir + file)
 		graph_tweets_vs_time(data_list, file + ".png")
-		graph_degree_vs_time(graph, data_list, file + ".png")
-		graph_clustering_vs_time(graph, data_list, file + "png")
-		graph_avg_diam_vs_time(graph, data_list, file + ".png")
-		graph_followers_vs_time(data_list, file + ".png")
+		#graph_degree_vs_time(graph, data_list, file + ".png")
+		#graph_clustering_vs_time(graph, data_list, file + "png")
+		#graph_avg_diam_vs_time(graph, data_list, file + ".png")
+		#graph_followers_vs_time(data_list, file + ".png")
+		analyze_high_follower_nodes(graph, data_list, file + ".png")
 	
