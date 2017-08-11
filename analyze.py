@@ -249,27 +249,29 @@ def analyze_high_follower_nodes(graph, data_list, file_name):
 		dists = []
 		for large_node in large_nodes:
 			try:
-				dists.append(len(nx.shortest_path(graph, user, prev_user)))
+				dists.append(len(nx.shortest_path(graph, user, large_node["user"]["id"])))
+				#print("path found")
 			except:
-				dists.append(len(users))
+				dists.append(50-len(dists))
 		
 		if large_nodes:
+			#print(dists)
 			closest = dists.index(min(dists))
 			delta_ts.append(time_ms[i]- large_nodes[closest]["time_ms"] )
 		else:
-			delta_ts.append(1)
+			delta_ts.append(0)
 		
 		if num_followers >= avg_followers + std*2:
+			#print("new large node")
 			large_nodes.append(data_list[i])
 			
-	
+	print(len(large_nodes))
 	max_dt = max(delta_ts)
 	min_dt = min(delta_ts)
 	
 	dt_norm = []
 	
 	for dt in delta_ts:
-		print(dt)
 		dt_norm.append((dt-min_dt)/(max_dt-min_dt))
 
 	
@@ -316,7 +318,7 @@ if __name__ == "__main__":
 		print(file)
 		graph = gen_network_graph_from_tweets(data_dir + file)
 		data_list = gen_network_from_tweets(data_dir + file)
-		graph_tweets_vs_time(data_list, file + ".png")
+		#graph_tweets_vs_time(data_list, file + ".png")
 		#graph_degree_vs_time(graph, data_list, file + ".png")
 		#graph_clustering_vs_time(graph, data_list, file + "png")
 		#graph_avg_diam_vs_time(graph, data_list, file + ".png")
