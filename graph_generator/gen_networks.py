@@ -1,5 +1,6 @@
 import os
 import random
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -18,18 +19,18 @@ def load_network(node_input, edge_input):
 		id, followers = node_str.split(",")
 		nodes.append([int(id), int(followers)])
 		
-	node_followers =  []
 	for n in nodes:
 		node_followers.append([])
+		
 	for edge_str in edges_str:
 		node, follower, weight = edge_str.split(",")
 		node = int(node)
 		follower = int(follower)
 		
 		node_followers[node].append(follower)
+	
+	return nodes, node_followers
 		
-	print(node_followers)
-
 def write_node_output(output_file):
 	res = "id,num_following\n"
 	for node in nodes:
@@ -113,15 +114,34 @@ def test_network():
 	tweeted = np.full(len(nodes), False)
 	seen = np.full(len(nodes), 0)
 	
+	print(len(nodes))
 	rconn = random.randint(0,len(nodes)-1)
 	tweet(rconn, tweeted, seen)
 	
-	
+	count = 0
+	while count < 5:
+		print(tweeted)
+		tweet_next = []
+		for i in range(0, len(tweeted)):
+			if not tweeted[i] and seen[i]:
+				r = random.uniform(0,1)
+				if r > max(math.pow(.98,seen[i]), .9):
+					tweet_next.append(i)
+		if not tweet_next:
+			count += 1
+		else:
+			count = 0
+			
+		for tweeter in tweet_next:
+			tweet(tweeter, tweeted, seen)
+			
+def gen_net(n, clustering):
+	gen_nodes(n)
+	gen_edges()
+	write_node_output("networks/NodeTest.csv")
+	write_edge_output("networks/EdgeTest.csv")
+			
 if __name__ == "__main__":
-	#n = 1000
-	#clustering = .5
-	#gen_nodes(n)
-	#gen_edges()
-	#write_node_output("networks/NodeTest.csv")
-	#write_edge_output("networks/EdgeTest.csv")
-	load_network("networks/NodeTest.csv", "networks/EdgeTest.csv")
+	#gen_net(1000,.5)
+	nodes, node_followers = load_network("networks/NodeTest.csv", "networks/EdgeTest.csv")
+	test_network()
