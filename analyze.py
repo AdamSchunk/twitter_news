@@ -274,8 +274,7 @@ def analyze_high_follower_nodes(graph, data_list, file_name):
 	
 	plt.savefig(directory + file_name)
 	plt.clf()			
-		
-		
+				
 def graph_avg_follower(data_list, file_name):
 	directory = "analysis/images/avg_follower/"
 	if not os.path.exists(directory):
