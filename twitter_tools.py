@@ -25,6 +25,7 @@ class Twitter_Tools(object):
 		auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
 		self.api = tweepy.API(auth)
 		self.tweet_parser = Tweet_Parser()
+		self.indexed_users = [f for f in listdir("users") if isfile(join("users", f))]
 		
 	def do_sleep(self):
 		print("******sleeping until more requests available (16 min)*******")
@@ -64,13 +65,13 @@ class Twitter_Tools(object):
 		
 			
 	def save_user_is_following(self, user_name):
-		indexed_users = [f for f in listdir("users") if isfile(join("users", f))]
-		if(str(user_name) not in indexed_users):
+		if(str(user_name) not in self.indexed_users):
 			following_list = tweepy.Cursor(self.api.friends_ids, id=user_name, count=5000).items()
 			output_file = open("users/" + str(user_name), "w")
 			i = 0
 			while True:
 				user = self.timeout_safe_call(following_list.next)
+				self.indexed_users.append(str(user_name))
 				if user == -1:
 					break
 				if user == -2:

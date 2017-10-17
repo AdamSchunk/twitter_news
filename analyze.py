@@ -27,6 +27,8 @@ def gen_network_graph_from_tweets(tweet_file):
 		following_list = following_file.read().splitlines()
 		for following in following_list:
 			following_int = int(following)
+			if following_int == 6224302:
+				print("found something?")
 			if graph.has_node(following_int):
 				graph.add_edge(curr_user, following_int)
 	
@@ -112,17 +114,6 @@ def graph_tweets_vs_time(data_list, file_name):
 	plt.savefig(directory + file_name)
 	plt.clf()
 	
-def graph_previous_views_vs_time(data_list, file_name):
-	time_ms = [d['time_ms'] for d in data_list]
-	seen_from_list = [d['seen_from'] for d in data_list]
-	x = time_ms
-	y = []
-	
-	for i in range(0,len(time_ms)):
-		y.append(len(seen_from_list[i]))
-	
-	plt.plot(x,y)
-	plt.show()
 	
 def graph_followers_vs_time(data_list, file_name):
 	directory = "analysis/images/followers_vs_time/"
@@ -131,10 +122,10 @@ def graph_followers_vs_time(data_list, file_name):
 	time_ms = [d['time_ms'] for d in data_list]
 	followers_count_list = [d['user']["followers_count"] for d in data_list]
 	x = time_ms
-	y = []
+	y = followers_count_list #seriously? who coded this shit... oh right it was me... Bad adam!
 	
-	for num_followers in followers_count_list:
-		y.append(num_followers)
+	#for num_followers in followers_count_list:
+	#	y.append(num_followers)
 	
 	plt.plot(x,y)
 	plt.savefig(directory + "/" + file_name)
@@ -162,9 +153,9 @@ def graph_degree_vs_time(graph, data_list, file_name):
 	if not os.path.exists(directory):
 		os.makedirs(directory)
 	
-	if os.path.exists(directory + file_name):
-		print("degree vs time already saved")
-		return
+	#if os.path.exists(directory + file_name):
+		#print("degree vs time already saved")
+		#return
 		
 		
 	time_ms = [d['time_ms'] for d in data_list]	
@@ -173,7 +164,10 @@ def graph_degree_vs_time(graph, data_list, file_name):
 	y = []
 	
 	for user in users:
-		y.append(nx.degree(graph, user))
+		deg = nx.degree(graph, user)
+		#if deg == 0:
+		#	print(user)
+		y.append(deg)
 		
 	plt.plot(x,y)
 	
@@ -280,7 +274,21 @@ def analyze_high_follower_nodes(graph, data_list, file_name):
 	plt.clf()			
 		
 		
+def graph_avg_follower(data_list, file_name):
+	directory = "analysis/images/avg_follower/"
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+	time_ms = [d['time_ms'] for d in data_list]
+	followers_count_list = [d['user']["followers_count"] for d in data_list]
+	x = time_ms
+	y = []
 	
+	for i in range(0,len(followers_count_list)):
+		y.append(sum(followers_count_list[i-5:i+5])/10)
+	
+	plt.plot(x,y)
+	plt.savefig(directory + "/" + file_name)
+	plt.clf()
 	
 def find_jumps(x, y, data_list):
 	slopes = []
@@ -309,6 +317,52 @@ def analyze_jumps(graph, data_list, file_name): #look at who retweeted from the 
 		y.append(i)
 
 
+def predict_on_degree(data_list, file_name):
+	directory = "analysis/images/predict_on_followers/"
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+	
+	#if os.path.exists(directory + file_name):
+	#	print("follower based prediction already saved")
+	#	return
+		
+	
+	followers_count_list = [d['user']["followers_count"] for d in data_list]
+	
+	time_ms = [d['time_ms'] for d in data_list]
+	x = time_ms #range(0,len(data_list))
+	y = []
+	avgs = []
+	stds = []
+	
+	#make a rolling func? every time it sees something near 5000 it gets larger and then gets smaller again 
+	#might be good...
+	
+	curr = 0
+	prev_binary = []
+	for i in range(0,len(time_ms)):
+		#(1/(1+math.exp(-((followers_count_list[i]-10000)/100)))-.1)*100
+		
+		s = sum(prev_binary[-50:])/50
+		
+		if followers_count_list[i] > 6000:
+			res = max(s+.80,.1)
+			prev_binary.append(1)
+		else:
+			res = min(s-.15,0)
+			prev_binary.append(0)
+		
+		curr += res
+		curr = max(curr, 0)
+		y.append(curr)
+	
+	#average (unlikely to likely) but the std should play a large roll in that measure. small std with decent average should also count
+	#5000 avg seems to corrolate well
+	
+	plt.plot(x,y)
+	plt.savefig(directory + file_name)
+	plt.clf()
+		
 if __name__ == "__main__":
 	data_dir = "tweet_search_results/"
 	analysis_dir = "analysis/"
@@ -316,10 +370,12 @@ if __name__ == "__main__":
 		print(file)
 		graph = gen_network_graph_from_tweets(data_dir + file)
 		data_list = gen_network_from_tweets(data_dir + file)
-		graph_tweets_vs_time(data_list, file + ".png")
-		#graph_degree_vs_time(graph, data_list, file + ".png")
+		#graph_tweets_vs_time(data_list, file + ".png")
+		#graph_avg_follower(data_list, file + ".png")
+		#predict_on_degree(data_list, file + ".png")
+		graph_degree_vs_time(graph, data_list, file + ".png")
 		#graph_clustering_vs_time(graph, data_list, file + "png")
 		#graph_avg_diam_vs_time(graph, data_list, file + ".png")
 		#graph_followers_vs_time(data_list, file + ".png")
-		analyze_high_follower_nodes(graph, data_list, file + ".png")
+		#analyze_high_follower_nodes(graph, data_list, file + ".png")
 	

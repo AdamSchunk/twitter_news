@@ -60,7 +60,7 @@ if __name__ == "__main__":
 	#query = sys.argv[1]
 	tt = Twitter_Tools()
 	#generate_retweet_files(4, "trump", 2000)
-	#tt.save_user_is_following("34051134")	
+	#tt.save_user_is_following("21993294")	
 	gen_new_user_files()
 	
 	#gen_network_from_tweets(query)
