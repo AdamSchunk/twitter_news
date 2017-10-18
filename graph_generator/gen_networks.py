@@ -1,4 +1,5 @@
 import os
+import copy
 import random
 import math
 import numpy as np
@@ -110,22 +111,21 @@ def tweet(node_idx, tweeted, seen):
 		seen[follower] = seen[follower] + 1
 	
 	
-def test_network():
+def run_network():
 	tweeted = np.full(len(nodes), False)
 	seen = np.full(len(nodes), 0)
-	
-	print(len(nodes))
+	timesteps = []
 	rconn = random.randint(0,len(nodes)-1)
 	tweet(rconn, tweeted, seen)
 	
 	count = 0
 	while count < 5:
-		print(tweeted)
+		timesteps.append(copy.deepcopy(tweeted))
 		tweet_next = []
 		for i in range(0, len(tweeted)):
 			if not tweeted[i] and seen[i]:
 				r = random.uniform(0,1)
-				if r > max(math.pow(.98,seen[i]), .9):
+				if r > max(math.pow(.98,seen[i]), .95):
 					tweet_next.append(i)
 		if not tweet_next:
 			count += 1
@@ -134,14 +134,31 @@ def test_network():
 			
 		for tweeter in tweet_next:
 			tweet(tweeter, tweeted, seen)
+	return timesteps
 			
 def gen_net(n, clustering):
 	gen_nodes(n)
 	gen_edges()
 	write_node_output("networks/NodeTest.csv")
 	write_edge_output("networks/EdgeTest.csv")
+	
+def analysis(timesteps, nodes, node_followers):
+	x = np.linspace(0, len(timesteps)-1, len(timesteps), endpoint=True)
+	y = []
+	
+	for ts in timesteps:
+		y.append(np.count_nonzero(ts == True))
+		#print(y)
+		
+	plt.plot(x,y)
+	plt.show()
+	#plt.savefig(directory + file_name)
+	#plt.clf()
 			
 if __name__ == "__main__":
-	#gen_net(1000,.5)
+	gen_net(5000,.5)
 	nodes, node_followers = load_network("networks/NodeTest.csv", "networks/EdgeTest.csv")
-	test_network()
+	ts = run_network()
+	while np.count_nonzero(ts[-1] == True) <= 5:
+		ts = run_network()
+	analysis(ts, nodes, node_followers)
