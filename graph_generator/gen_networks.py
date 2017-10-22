@@ -5,8 +5,6 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy import optimize
-
 nodes = []
 node_followers = []
 
@@ -52,9 +50,9 @@ def write_edge_output(output_file):
 		
 	output = open(output_file, "w")
 	
-	output.write(res)
+	output.write(res)	
 
-def deg_func():
+def deg_func(): #in degree of nodes (followers)
 	res = 0
 	x = [.0001, .00177, .31622, 10, 177.8, 562.3] #*10e4 (probability of getting y)
 	#-8, -6.75, -4.75, -3, -1.75, -1.25
@@ -156,9 +154,11 @@ def analysis(timesteps, nodes, node_followers):
 	#plt.clf()
 			
 if __name__ == "__main__":
-	gen_net(5000,.5)
+	#in degree = num followers
+	#out degree = num following
+	#gen_net(5000,.5)
 	nodes, node_followers = load_network("networks/NodeTest.csv", "networks/EdgeTest.csv")
 	ts = run_network()
-	while np.count_nonzero(ts[-1] == True) <= 5:
+	while np.count_nonzero(ts[-1] == True) <= 5: # if less than 6 people tweeted, redo the analysis
 		ts = run_network()
 	analysis(ts, nodes, node_followers)
