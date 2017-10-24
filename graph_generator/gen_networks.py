@@ -38,7 +38,7 @@ def write_node_output(nodes, output_file):
 		
 		res = res + str(i) + "," + str(node[0]) + "," + str(node[2]) + "\n"
 		
-	output = open(output_file, "w")
+	output = open(output_file + "/nodes.csv", "w")
 	
 	output.write(res)
 	
@@ -51,7 +51,7 @@ def write_edge_output(nodes, output_file):
 			res = res + str(i) + "," + str(edge) + ",1\n"
 		
 		
-	output = open(output_file, "w")
+	output = open(output_file + "/edges.csv", "w")
 	
 	output.write(res)	
 
@@ -86,19 +86,6 @@ def gen_nodes(num):
 		nodes.append([num_followers, [], num_following, []])
 		
 	return nodes
-	
-
-def clust_func():
-	res = 0
-	x = [1, 10000] 
-	y = [.3,.05]
-	r = random.uniform(1, 10000)
-	for i, x1 in enumerate(x):
-		if r <= x1:
-			x_dis = (r-x[i-1])/(x[i]-x[i-1])
-			res = int(x_dis*(y[i-1]-y[i]) + y[i])
-			break
-	return res
 			
 			
 def weighted_choice(weights):
@@ -115,6 +102,8 @@ def weighted_choice(weights):
 def gen_edge_probs(nodes, curr_node_idx):
 	weights = np.full(len(nodes), 100)
 	curr_node_relationships = nodes[curr_node_idx][1] + list(set(nodes[curr_node_idx][3]) - set(nodes[curr_node_idx][1]))
+	
+	
 	
 	for i, node in enumerate(nodes):
 		#generates weights for every possible connection based on max #following
@@ -138,6 +127,8 @@ def gen_edge_probs(nodes, curr_node_idx):
 #no more followers are available in any node
 def gen_edges(nodes):
 	followers_available = np.full(len(nodes), True)
+	total_nodes = len(nodes)
+	percent_done = 0
 	while True in followers_available:
 		for i, node in enumerate(nodes):
 			if followers_available[i] == False:
@@ -154,9 +145,13 @@ def gen_edges(nodes):
 			#if there are fewer nodes than available connections.
 			#this should not happen under normal operation. prevents errors in testing small networks
 			if len(nodes[i][1]) == len(nodes)-1: 	
-				followers_available[i] = False		
+				followers_available[i] = False	
+
+			if (i%total_nodes/10 == 0):
+				print (percent_done*10)
+				percent_done += 1
 	
-def tweet(node_idx, tweeted, seen):
+def tweet(nodes, node_idx, tweeted, seen):
 	tweeted[node_idx] = True
 	for follower in nodes[node_idx][1]:
 		seen[follower] = seen[follower] + 1
@@ -166,8 +161,13 @@ def run_network(nodes):
 	tweeted = np.full(len(nodes), False)
 	seen = np.full(len(nodes), 0)
 	timesteps = []
-	rconn = random.randint(0,len(nodes)-1)
-	tweet(rconn, tweeted, seen)
+	
+	rand_start = 0
+	while True:
+		rand_start = random.randint(0,len(nodes)-1)
+		if nodes[rand_start][0] <= 30:
+			break
+	tweet(nodes, rand_start, tweeted, seen)
 	
 	count = 0
 	while count < 5:
@@ -176,7 +176,7 @@ def run_network(nodes):
 		for i in range(0, len(tweeted)):
 			if not tweeted[i] and seen[i]:
 				r = random.uniform(0,1)
-				if r > max(math.pow(.98,seen[i]), .95):
+				if r > max(math.pow(.9997,seen[i]), .99):
 					tweet_next.append(i)
 		if not tweet_next:
 			count += 1
@@ -184,16 +184,20 @@ def run_network(nodes):
 			count = 0
 			
 		for tweeter in tweet_next:
-			tweet(tweeter, tweeted, seen)
+			tweet(nodes, tweeter, tweeted, seen)
 	return timesteps
 			
-def gen_net(n, clustering):
+def gen_net(n, output_dir):
 	nodes = gen_nodes(n)
 	edges = gen_edges(nodes)
-	write_node_output(nodes, "networks/NodeTest.csv")
-	write_edge_output(nodes, "networks/EdgeTest.csv")
 	
-def analysis(timesteps, nodes):
+	if not os.path.exists("networks/" + output_dir):
+		os.makedirs("networks/" + output_dir)
+	
+	write_node_output(nodes, "networks/" + output_dir)
+	write_edge_output(nodes, "networks/" + output_dir)
+	
+def run_analysis(timesteps, nodes):
 	x = np.linspace(0, len(timesteps)-1, len(timesteps), endpoint=True)
 	y = []
 	
@@ -205,15 +209,69 @@ def analysis(timesteps, nodes):
 	#plt.savefig(directory + file_name)
 	#plt.clf()
 	
+def clustering(curr_node_idx, curr_node, nodes):
+	nbrhood = curr_node[1] + list(set(curr_node[3]) - set(curr_node[1]))
+	nbrhood.append(curr_node_idx)
+	nbrhood_edgs = 0
+	for n in nbrhood:		
+		followers_in_rbrhood = set(nodes[n][1]).intersection(nbrhood)
+		nbrhood_edgs = nbrhood_edgs + len(followers_in_rbrhood)
+		
+	num_neigh = len(nbrhood)
+	
+	return nbrhood_edgs/(num_neigh*(num_neigh-1))
+		
+		
+def net_analysis(nodes, output):
+	directory = "networks/" + output
+	x = np.linspace(0, len(nodes)-1, len(nodes), endpoint=True)
+	
+	#follower degree
+	deg = []
+	y = []
+	for n in nodes:
+		y.append(n[0])
+		deg.append(n[0])
+	
+	y.sort()
+	plt.plot(x,y)
+	plt.savefig(directory + "/follower_degree")
+	plt.clf()
+	
+	#following degree
+	y = []
+	for n in nodes:
+		y.append(n[2])
+	
+	y.sort()
+	plt.plot(x,y)
+	plt.savefig(directory + "/following_degree")
+	plt.clf()
+	
+	#clustering
+	y = []
+	for i,n in enumerate(nodes):
+		y.append(clustering(i, n, nodes))
+	
+	deg, y = (list(x) for x in zip(*sorted(zip(deg, y))))
+	
+	plt.plot(deg,y)
+	plt.savefig(directory + "/clustering")
+	plt.clf()
+	
 def run_from_save(node_file, edge_file):
 	nodes = load_network(node_file, edge_file)
 	ts = run_network(nodes)
-	while np.count_nonzero(ts[-1] == True) <= 5: # if less than 6 people tweeted, redo the analysis
+	while np.count_nonzero(ts[-1] == True) <= 100: # if less than x people tweeted, redo the analysis
 		ts = run_network(nodes)
-	analysis(ts, nodes)
+	start_idx = ts[0].tolist().index(True)
+	print(nodes[start_idx][0])
+	run_analysis(ts, nodes)
 			
 if __name__ == "__main__":
 	#in degree = num followers
 	#out degree = num following
-	gen_net(1000,.5)
-	#run_from_save("networks/NodeTest.csv", "networks/EdgeTest.csv")
+	gen_net(10000, "test10000")
+	#nodes = load_network("networks/test1000/nodes.csv", "networks/test1000/edges.csv")
+	#net_analysis(nodes, "test1000")
+	#run_from_save("networks/test1000/nodes.csv", "networks/test1000/edges.csv")
