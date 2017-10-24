@@ -15,7 +15,6 @@ def gen_network_graph_from_tweets(tweet_file):
 	users = []
 	nodes = set()
 	graph = nx.Graph()
-	edges = []
 
 	for tweet in tweets:
 		users.append(tweet["user"]["id"])
@@ -27,8 +26,6 @@ def gen_network_graph_from_tweets(tweet_file):
 		following_list = following_file.read().splitlines()
 		for following in following_list:
 			following_int = int(following)
-			if following_int == 6224302:
-				print("found something?")
 			if graph.has_node(following_int):
 				graph.add_edge(curr_user, following_int)
 	
@@ -78,18 +75,8 @@ def gen_network_from_tweets(tweet_file):
 		data['user'] = tweet["user"]
 		data['time_ms'] = ms_from_created_at(tweet["created_at"])
 		
-		#generate list of who they could have seen the tweet from
-		seen_from = []
-		following_file = open("users/" + curr_user_id,"r")
-		following_list = following_file.read().splitlines()
-		for following in following_list:
-			if following in previous_retweeters:
-				seen_from.append(following)
-					
-		data['seen_from'] = seen_from
 		previous_retweeters.append(curr_user_id)
 		data_list.append(data)
-		following_file.close()
 	#returns with earliest tweet as entry 0
 	return list(reversed(data_list))
 
@@ -113,7 +100,6 @@ def graph_tweets_vs_time(data_list, file_name):
 	plt.plot(x,y)
 	plt.savefig(directory + file_name)
 	plt.clf()
-	
 	
 def graph_followers_vs_time(data_list, file_name):
 	directory = "analysis/images/followers_vs_time/"
@@ -168,6 +154,36 @@ def graph_degree_vs_time(graph, data_list, file_name):
 		#if deg == 0:
 		#	print(user)
 		y.append(deg)
+		
+	plt.plot(x,y)
+	
+	
+	plt.savefig(directory + file_name)
+	plt.clf()
+		
+def graph_in_out_degree_ratio_vs_time(graph, data_list, file_name):
+	directory = "analysis/images/degree_ratio_vs_time/"
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+	
+	#if os.path.exists(directory + file_name):
+		#print("degree vs time already saved")
+		#return
+		
+		
+	time_ms = [d['time_ms'] for d in data_list]	
+	users = [d["user"]["id"] for d in data_list]
+	followers_count_list = [d['user']["followers_count"] for d in data_list]
+	x = time_ms
+	y = []
+	
+	for i,user in enumerate(users):
+		deg = nx.degree(graph, user)
+		foll = followers_count_list[i]
+		if foll != 0:
+			y.append(deg/foll)
+		else:
+			y.append(0)
 		
 	plt.plot(x,y)
 	
@@ -375,6 +391,7 @@ if __name__ == "__main__":
 		#graph_avg_follower(data_list, file + ".png")
 		#predict_on_degree(data_list, file + ".png")
 		graph_degree_vs_time(graph, data_list, file + ".png")
+		graph_in_out_degree_ratio_vs_time(graph, data_list, file + ".png")
 		#graph_clustering_vs_time(graph, data_list, file + "png")
 		#graph_avg_diam_vs_time(graph, data_list, file + ".png")
 		#graph_followers_vs_time(data_list, file + ".png")
