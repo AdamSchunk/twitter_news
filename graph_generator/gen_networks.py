@@ -10,9 +10,9 @@ In my model the arrows point opposite from the paper referenced.
 In the paper the A -> B represents A follows B
 Here A -> B represents information flows from A to B (B follows A)
 '''
-def load_network(node_input, edge_input):
-	node_file = open(node_input, "r")
-	edge_file = open(edge_input, "r")
+def load_network(input_file):
+	node_file = open("networks/" + input_file + "/nodes.csv", "r")
+	edge_file = open("networks/" + input_file + "/edges.csv", "r")
 	nodes_str = node_file.readlines()[1:]
 	edges_str = edge_file.readlines()[1:]
 	nodes = []
@@ -117,7 +117,7 @@ def gen_edge_probs(nodes, curr_node_idx):
 		tmp_rel = nodes[i][1] + list(set(nodes[i][3]) - set(nodes[i][1]))
 		intersect = set(curr_node_relationships).intersection(tmp_rel)
 		
-		mult = 1+len(intersect)/5
+		mult = 1+len(intersect)
 		
 		weights[i] = weights[i] * mult
 		
@@ -129,6 +129,8 @@ def gen_edges(nodes):
 	followers_available = np.full(len(nodes), True)
 	total_nodes = len(nodes)
 	percent_done = 0
+	total_followers = sum([n[0] for n in nodes])
+	num_done = 0
 	while True in followers_available:
 		for i, node in enumerate(nodes):
 			if followers_available[i] == False:
@@ -146,15 +148,15 @@ def gen_edges(nodes):
 			#this should not happen under normal operation. prevents errors in testing small networks
 			if len(nodes[i][1]) == len(nodes)-1: 	
 				followers_available[i] = False	
-
-			if (i%total_nodes/10 == 0):
-				print (percent_done*10)
-				percent_done += 1
+				
+			num_done += 1 		
+			if (num_done%int(total_followers/100) == 0): 
+				print (str(int(num_done/total_followers*100)) + "%")
 	
-def tweet(nodes, node_idx, tweeted, seen):
+def tweet(nodes, node_idx, tweeted, seen, curr_step):
 	tweeted[node_idx] = True
 	for follower in nodes[node_idx][1]:
-		seen[follower] = seen[follower] + 1
+		seen[follower] = curr_step
 	
 	
 def run_network(nodes):
@@ -167,16 +169,18 @@ def run_network(nodes):
 		rand_start = random.randint(0,len(nodes)-1)
 		if nodes[rand_start][0] <= 30:
 			break
-	tweet(nodes, rand_start, tweeted, seen)
+	tweet(nodes, rand_start, tweeted, seen, 1)
 	
 	count = 0
+	curr_step = 1
 	while count < 5:
 		timesteps.append(copy.deepcopy(tweeted))
 		tweet_next = []
 		for i in range(0, len(tweeted)):
 			if not tweeted[i] and seen[i]:
 				r = random.uniform(0,1)
-				if r > max(math.pow(.9997,seen[i]), .99):
+				prob = .2
+				if r > prob + (1-prob)/((curr_step - seen[i])):
 					tweet_next.append(i)
 		if not tweet_next:
 			count += 1
@@ -184,7 +188,10 @@ def run_network(nodes):
 			count = 0
 			
 		for tweeter in tweet_next:
-			tweet(nodes, tweeter, tweeted, seen)
+			tweet(nodes, tweeter, tweeted, seen, curr_step)
+		
+		curr_step += 1
+		
 	return timesteps
 			
 def gen_net(n, output_dir):
@@ -259,10 +266,10 @@ def net_analysis(nodes, output):
 	plt.savefig(directory + "/clustering")
 	plt.clf()
 	
-def run_from_save(node_file, edge_file):
-	nodes = load_network(node_file, edge_file)
+def run_from_save(output_name):
+	nodes = load_network(output_name)
 	ts = run_network(nodes)
-	while np.count_nonzero(ts[-1] == True) <= 100: # if less than x people tweeted, redo the analysis
+	while np.count_nonzero(ts[-1] == True) <= 3: # if less than x people tweeted, redo the analysis
 		ts = run_network(nodes)
 	start_idx = ts[0].tolist().index(True)
 	print(nodes[start_idx][0])
@@ -271,7 +278,8 @@ def run_from_save(node_file, edge_file):
 if __name__ == "__main__":
 	#in degree = num followers
 	#out degree = num following
-	gen_net(10000, "test10000")
-	#nodes = load_network("networks/test1000/nodes.csv", "networks/test1000/edges.csv")
-	#net_analysis(nodes, "test1000")
-	#run_from_save("networks/test1000/nodes.csv", "networks/test1000/edges.csv")
+	data_dir = "100000_1c"
+	gen_net(100000, data_dir)
+	#nodes = load_network(data_dir)
+	#net_analysis(nodes, data_dir)
+	#run_from_save(data_dir)
