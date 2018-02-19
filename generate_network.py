@@ -59,7 +59,7 @@ if __name__ == "__main__":
 	#tweet_thresh = int(sys.argv[2])
 	#query = sys.argv[1]
 	tt = Twitter_Tools()
-	#generate_retweet_files(4, "trump", 2000)
+	#generate_retweet_files(8, "trump", 2000)
 	#tt.save_user_is_following("21993294")	
 	gen_new_user_files()
 	

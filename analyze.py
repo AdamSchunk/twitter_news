@@ -101,6 +101,39 @@ def graph_tweets_vs_time(data_list, file_name):
 	plt.savefig(directory + file_name)
 	plt.clf()
 	
+def graph_followers_vs_time_segmented(data_list, file_name):
+	directory = "analysis/images/followers_vs_time_segmented/"
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+	time_ms = [d['time_ms'] for d in data_list]
+	followers_count_list = [d['user']["followers_count"] for d in data_list]
+	
+	y = []
+	
+	interval = (3600*1000) #hour/x
+	
+	section_time = time_ms[0]
+	follow_cnt = 0
+	for i, followers in enumerate(followers_count_list):
+		time = time_ms[i]
+		
+		if time >= section_time + interval:
+			y.append(follow_cnt)
+			follow_cnt = 0
+			section_time = section_time + interval
+			
+		follow_cnt = follow_cnt + followers
+		
+		
+	#for num_followers in followers_count_list:
+	#	y.append(num_followers)
+	
+	x = np.linspace(1,len(y),len(y))
+	
+	plt.plot(x,y)
+	plt.savefig(directory + "/" + file_name)
+	plt.clf()
+	
 def graph_followers_vs_time(data_list, file_name):
 	directory = "analysis/images/followers_vs_time/"
 	if not os.path.exists(directory):
@@ -383,17 +416,19 @@ def predict_on_degree(data_list, file_name):
 if __name__ == "__main__":
 	data_dir = "tweet_search_results/"
 	analysis_dir = "analysis/"
+
 	for file in os.listdir(data_dir):
 		print(file)
 		graph = gen_network_graph_from_tweets(data_dir + file)
 		data_list = gen_network_from_tweets(data_dir + file)
-		#graph_tweets_vs_time(data_list, file + ".png")
+		graph_tweets_vs_time(data_list, file + ".png")
+		graph_followers_vs_time_segmented(data_list, file + ".png")
 		#graph_avg_follower(data_list, file + ".png")
 		#predict_on_degree(data_list, file + ".png")
-		graph_degree_vs_time(graph, data_list, file + ".png")
-		graph_in_out_degree_ratio_vs_time(graph, data_list, file + ".png")
+		#graph_degree_vs_time(graph, data_list, file + ".png")
+		#graph_in_out_degree_ratio_vs_time(graph, data_list, file + ".png")
 		#graph_clustering_vs_time(graph, data_list, file + "png")
 		#graph_avg_diam_vs_time(graph, data_list, file + ".png")
-		#graph_followers_vs_time(data_list, file + ".png")
+		graph_followers_vs_time(data_list, file + ".png")
 		#analyze_high_follower_nodes(graph, data_list, file + ".png")
 	

@@ -1,7 +1,10 @@
 import os
+import re
 import copy
 import random
 import math
+import time
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -156,12 +159,13 @@ def gen_edges(nodes):
 def tweet(nodes, node_idx, tweeted, seen, curr_step):
 	tweeted[node_idx] = True
 	for follower in nodes[node_idx][1]:
-		seen[follower] = curr_step
+		seen[follower][0] = curr_step
+		seen[follower][1] = seen[follower][1]+1
 	
 	
 def run_network(nodes):
 	tweeted = np.full(len(nodes), False)
-	seen = np.full(len(nodes), 0)
+	seen = np.full((len(nodes),2), 0)
 	timesteps = []
 	
 	rand_start = 0
@@ -173,14 +177,28 @@ def run_network(nodes):
 	
 	count = 0
 	curr_step = 1
+	base_prob = .01
 	while count < 5:
 		timesteps.append(copy.deepcopy(tweeted))
 		tweet_next = []
 		for i in range(0, len(tweeted)):
-			if not tweeted[i] and seen[i]:
+			if not tweeted[i] and seen[i][0]:
 				r = random.uniform(0,1)
-				prob = .2
-				if r > prob + (1-prob)/((curr_step - seen[i])):
+				
+				time_past = curr_step - seen[i][0] + 1
+				
+				prob = base_prob/(time_past*2)
+
+				#prob =  1- math.pow((1-prob),seen[i][1])
+				
+				
+				#prob = base_prob + (1-base_prob)/((curr_step - seen[i])) 
+				
+				#prob = base_prob + math.pow(time_past, 1.5)/30
+				
+				
+				
+				if r < max(prob, .000001):
 					tweet_next.append(i)
 		if not tweet_next:
 			count += 1
@@ -204,17 +222,85 @@ def gen_net(n, output_dir):
 	write_node_output(nodes, "networks/" + output_dir)
 	write_edge_output(nodes, "networks/" + output_dir)
 	
-def run_analysis(timesteps, nodes):
+def run_analysis(timesteps, nodes, output_dir):
+	output_dir = output_dir + "/" + str(int(time.time()))
+	
+	try:
+		os.stat("networks/" + output_dir)
+	except:
+		os.mkdir("networks/" + output_dir) 
+	
 	x = np.linspace(0, len(timesteps)-1, len(timesteps), endpoint=True)
 	y = []
 	
+	
+	user_tweet_list = []
+	new_user_tweet = []
+
+	
+	#plot tweets vs time
 	for ts in timesteps:
-		y.append(np.count_nonzero(ts == True))
+		tweeted_this_ts=[i for i, x in enumerate(ts) if x]
+		if not user_tweet_list:
+			new_user_tweet.append([x for x in tweeted_this_ts]) #writing code on 2 hours of sleep makes bad code...
+		else:
+			new_user_tweet.append([x for x in tweeted_this_ts if x not in user_tweet_list[-1]])
+			
+		user_tweet_list.append(tweeted_this_ts)
+		y.append(len(user_tweet_list[-1]))
 		
+		
+	user_order_file = open("networks/" + output_dir + "/user_order.txt", "w")
+	
+	user_order_file.write(json.dumps(new_user_tweet, indent = 4, sort_keys=True))
+	
 	plt.plot(x,y)
-	plt.show()
-	#plt.savefig(directory + file_name)
-	#plt.clf()
+	plt.savefig("networks/" + output_dir + "/tweets_over_time.png")
+	plt.clf()
+	
+	
+	
+	#plot degree vs time
+	y = []
+	already_tweeted = []
+	for count, ts in enumerate(timesteps):
+		idxs = [i for i, j in enumerate(ts) if j == True]
+		tmp = 0
+		for idx in idxs:
+			if idx not in already_tweeted:
+				tmp = tmp + nodes[idx][0]
+				already_tweeted.append(idx)
+		
+		y.append(tmp)
+			
+	#x = np.linspace(0, len(y)-1, len(y), endpoint=True)
+	plt.plot(x,y)
+	plt.savefig("networks/" + output_dir + "/followers_over_time_avg.png")
+	plt.clf()
+	
+	
+	#plot degree vs time
+	y = []
+	x = []
+	already_tweeted = []
+	for count, ts in enumerate(timesteps):
+		idxs = [i for i, j in enumerate(ts) if j == True]
+		tmp = []
+		for idx in idxs:
+			if idx not in already_tweeted:
+				tmp.append(nodes[idx][0])
+				already_tweeted.append(idx)
+		
+		num_x = len(tmp)
+		for i, t in enumerate(tmp):
+			y.append(t)
+			x.append(count + i/num_x)
+			
+	#x = np.linspace(0, len(y)-1, len(y), endpoint=True)
+	plt.plot(x,y)
+	plt.savefig("networks/" + output_dir + "/followers_over_time.png")
+	plt.clf()
+	
 	
 def clustering(curr_node_idx, curr_node, nodes):
 	nbrhood = curr_node[1] + list(set(curr_node[3]) - set(curr_node[1]))
@@ -266,20 +352,96 @@ def net_analysis(nodes, output):
 	plt.savefig(directory + "/clustering")
 	plt.clf()
 	
-def run_from_save(output_name):
+def run_from_save(output_name, num_runs):
+	#add in to do multiple runs
 	nodes = load_network(output_name)
-	ts = run_network(nodes)
-	while np.count_nonzero(ts[-1] == True) <= 3: # if less than x people tweeted, redo the analysis
+	for i in range(0,num_runs):
+		print(i)
 		ts = run_network(nodes)
-	start_idx = ts[0].tolist().index(True)
-	print(nodes[start_idx][0])
-	run_analysis(ts, nodes)
+		while np.count_nonzero(ts[-1] == True) <= 300: # if less than x people tweeted, redo the analysis
+			ts = run_network(nodes)
+		start_idx = ts[0].tolist().index(True)
+		run_analysis(ts, nodes, output_name)
+		
+def analyze_runs(run_dir, nodes):
+
+	y = [0]*10000
+	num_clusters = 0
+	clusters = []
+	for (root, dirs, files) in os.walk("networks/" + run_dir):
+		for dir in dirs:
+			input = open(root + "/" + dir + "/user_order.txt", "r")
+			user_propogation = json.load(input)
+			
+			avg = 0
+			stream_follow = []
+			stream_ts = []
+			in_cluster = False
+			for ts in user_propogation:
+				
+
+				if len(stream_follow) == 50:
+					stream_follow.pop(0)
+					stream_ts.pop(0)
+
+				stream_ts.append(ts)
+				sum_users = sum([len(x) for x in stream_ts])
+
+				sum_followers = sum([nodes[idx][0] for idx in ts])
+				stream_follow.append(sum_followers)
+				
+				
+				if sum_users > 200 and not in_cluster:
+					cluster = []
+					in_cluster = True
+					for past_ts in stream_ts:
+						for user in past_ts:
+							cluster.append(user)
+							y[user] = y[user] + 1
+					clusters.append(cluster)
+				elif sum_users < 200 and in_cluster:
+					num_clusters = num_clusters + 1
+					in_cluster = False
+	
+	y2 = [0]*10000
+	for idx, count in enumerate(y):
+		y2[idx] = nodes[idx][0]
+
+	sorted_degrees = [x for _,x in sorted(zip(y,y2))]
+		
+	list.sort(y)	
+	plt.plot(np.linspace(0,10000,10000),y)
+	plt.savefig("networks/10000_1c/200cluster.png")
+	plt.show()
+	plt.clf()
+	
+	list.sort(y2)
+	plt.plot(np.linspace(0,10000,10000),y2)
+	#plt.show()
+		
+def identify_clusters(run_dir, nodes):
+	
+	num_clusters = 0
+	clusters = []
+	for (root, dirs, files) in os.walk("networks/" + run_dir):
+		for dir in dirs:
+			input = open(root + "/" + dir + "/user_order.txt", "r")
+			user_propogation = json.load(input)
+			
+			
 			
 if __name__ == "__main__":
 	#in degree = num followers
 	#out degree = num following
-	data_dir = "100000_1c"
-	gen_net(100000, data_dir)
-	#nodes = load_network(data_dir)
+	data_dir = "10000_1c"
+	
+	try:
+		os.stat("networks/" + data_dir)
+	except:
+		os.mkdir("networks/" + data_dir) 
+	
+	#gen_net(10000, data_dir)
+	nodes = load_network(data_dir)
 	#net_analysis(nodes, data_dir)
-	#run_from_save(data_dir)
+	#run_from_save(data_dir, 1000)
+	analyze_runs(data_dir, nodes)
