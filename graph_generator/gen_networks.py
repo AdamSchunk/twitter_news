@@ -109,7 +109,7 @@ def gen_edge_probs(nodes, curr_node_idx):
 	
 	for i, node in enumerate(nodes):
 		#generates weights for every possible connection based on max #following
-		if i == curr_node_idx or i in nodes[curr_node_idx][1]: # if i is node, or is already following node
+		if i == curr_node_idx or i in nodes[curr_node_idx][1]: # if i is node, or is already a follower of curr node
 			weights[i] = 0
 			continue
 		deduct = 100*(len(nodes[i][3])/nodes[i][2]) #num_following/max_num_following
