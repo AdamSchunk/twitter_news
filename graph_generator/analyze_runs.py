@@ -27,75 +27,58 @@ def load_network(input_file):
 	
 	
 def generate_windows(data_dir, nodes):
-	y = []
-	for i in range(10000):
-		y.append([0]*10000)
-	
-	for (root, dirs, files) in os.walk("networks/10000_1c"):
-		for dir in dirs:
-			input = open(root + "/" + dir + "/user_order.txt", "r")
-			user_propogation = json.load(input)
-			ts_window = []
-			for i, ts in enumerate(user_propogation):
-				ts_window.append(ts)
-				if len(ts_window) > 75:
-					ts_window.pop(0)
-				
-				if i < 50 and i > len(user_propogation) - 50:
-					continue
-				
-				for user in ts:
-					if nodes[user][0] < 100 or nodes[user][0] > 2000:
-						continue
-					for slot in ts_window:
-						for user_w in slot:
-							if nodes[user_w][0] < 100 or nodes[user_w][0] > 2000:
-								continue
-							y[user][user_w] = y[user][user_w] + 1
-					
-	
-	for i, user_window in enumerate(y):
-		for follower in nodes[i][1]:
-			user_window[follower] = 0
+	print("generating windows")
+	final = []
+	for node_id, node in enumerate(nodes):
+		y = [0]*len(nodes)
+		
+		if node[0] < 100 or node[0] > 2000:
+			continue
+		for (root, dirs, files) in os.walk("networks/" + data_dir):
+			for dir in dirs:
+				input = open(root + "/" + dir + "/user_order.txt", "r")
+				user_propogation = json.load(input)
+				ts_window = []
+				for i, ts in enumerate(user_propogation): #establish the window
+					if node_id in ts:
+						ts_window = user_propogation[i-30:i+30]
+
+						for slot in ts_window: #for each previous ts in the ts window
+							for user_w in slot: #compare against every other user in each ts
+								if nodes[user_w][0] < 100 or nodes[user_w][0] > 2000:
+									continue
+								y[user_w] = y[user_w] + 1
+						break
+		
+		potential_cluster = generate_potential_clusters(y, nodes, node_id)
+		final.append(potential_cluster)
 		
 		
-	with open('clustering_filtered_by_size.txt', 'w') as outfile:
-		outfile.write(json.dumps(y, indent = 4))
+	with open(data_dir + '/potential_clusters.txt', 'w') as outfile:
+		outfile.write(json.dumps(final, indent = 4))
 	
 	
 #takes in the windows from every node within range
 #returns all the windows with possible clusters in them
-def generate_potential_clusters(nodes):
-	input = open("clustering_filtered_by_size.txt", "r")
-	user_windows = json.load(input)
+def generate_potential_clusters(node_pairings, nodes, node_id):	
+
+	array = []
+	for node_idx, node_count in enumerate(node_pairings): #
+		if node_count > 15: # and node_idx not in nodes[node_id][1]:
+			array.append(node_idx)
+		
+	print(len(array))
 	
-	cluster_candidates = []
-	for i, user_window_count in enumerate(user_windows):
-		if sum(user_window_count) == 0:
-			continue
-		array = []
-		for node_idx, node_count in enumerate(user_window_count):
-			if node_count > 15:
-				array.append(node_idx)
-		cluster_candidates.append(array)
+	if len(array) == 0:
+		print(node_pairings)
 	
-	clusters = []
-	for i,a in enumerate(cluster_candidates):
-		for b in cluster_candidates[i+1:]:
-			overlap = list((set(a) & set(b)))
-			if len(overlap) > 10:
-				clusters.append(overlap)
-	
-	print(len(clusters))
-	
-	with open('potential_clusters.txt', 'w') as outfile:
-		outfile.write(json.dumps(clusters, indent = 4))
+	return array
 	
 #takes in windows around nodes with possible clusters in them
 #returns interesting clusters in the network
-def find_clusters(nodes):
+def find_clusters(data_dir, nodes):
 	print("finding clusters\n")
-	input = open("potential_clusters.txt", "r")
+	input = open(data_dir + "/potential_clusters.txt", "r")
 	potential_clusters = json.load(input)
 
 	num_seen = []
@@ -143,17 +126,14 @@ def find_clusters(nodes):
 if __name__ == "__main__":
 	#in degree = num followers
 	#out degree = num following
-	data_dir = "10000_1c"
+	data_dir = "100000_java"
 	
 	try:
 		os.stat("networks/" + data_dir)
 	except:
 		os.mkdir("networks/" + data_dir) 
 	
-	#gen_net(10000, data_dir)
 	nodes = load_network(data_dir)
-	#net_analysis(nodes, data_dir)
-	#run_from_save(data_dir, 1000)
-	#generate_windows(data_dir, nodes)
-	#generate_potential_clusters(nodes)
+	generate_windows(data_dir, nodes)
+	generate_potential_clusters(data_dir, nodes)
 	find_clusters(nodes)

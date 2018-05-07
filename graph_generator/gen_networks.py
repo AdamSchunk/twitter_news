@@ -20,7 +20,6 @@ def load_network(input_file):
 	edges_str = edge_file.readlines()[1:]
 	nodes = []
 	edges = []
-	
 	for node_str in nodes_str:
 		id, followers, following = node_str.split(",")
 		nodes.append([int(followers), [], int(following), []])
@@ -154,7 +153,7 @@ def gen_edges(nodes):
 				
 			num_done += 1 		
 			if (num_done%int(total_followers/100) == 0): 
-				print (str(int(num_done/total_followers*100)) + "%")
+				print(str(int(num_done/total_followers*100)) + "%")
 	
 def tweet(nodes, node_idx, tweeted, seen, curr_step):
 	tweeted[node_idx] = True
@@ -177,7 +176,7 @@ def run_network(nodes):
 	
 	count = 0
 	curr_step = 1
-	base_prob = .01
+	base_prob = .02
 	while count < 5:
 		timesteps.append(copy.deepcopy(tweeted))
 		tweet_next = []
@@ -433,15 +432,15 @@ def identify_clusters(run_dir, nodes):
 if __name__ == "__main__":
 	#in degree = num followers
 	#out degree = num following
-	data_dir = "10000_1c"
+	data_dir = "100000_java"
 	
 	try:
 		os.stat("networks/" + data_dir)
 	except:
 		os.mkdir("networks/" + data_dir) 
 	
-	#gen_net(10000, data_dir)
-	nodes = load_network(data_dir)
+	#gen_net(1000, data_dir)
+	#nodes = load_network(data_dir)
 	#net_analysis(nodes, data_dir)
-	#run_from_save(data_dir, 1000)
-	analyze_runs(data_dir, nodes)
+	run_from_save(data_dir, 1000)
+	#analyze_runs(data_dir, nodes)
