@@ -28,6 +28,7 @@ def load_network(input_file):
 		node, follower, weight = edge_str.split(",")
 		node = int(node)
 		follower = int(follower)
+		print(node)
 		
 		nodes[node][1].append(follower)
 		nodes[follower][3].append(node)
@@ -440,7 +441,7 @@ if __name__ == "__main__":
 		os.mkdir("networks/" + data_dir) 
 	
 	#gen_net(1000, data_dir)
-	#nodes = load_network(data_dir)
+	nodes = load_network(data_dir)
 	#net_analysis(nodes, data_dir)
-	run_from_save(data_dir, 1000)
+	#run_from_save(data_dir, 1000)
 	#analyze_runs(data_dir, nodes)
