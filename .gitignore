@@ -3,8 +3,14 @@
 *.zip
 *.csv
 *.png
+*.iml
+*.xml
 __pycache__/
+completed_retweet_files/
+hide stuff here/
+from_java/
 tweet_searches/
 tweet_search_results/
 users/
 analysis/*
+cmp.py
