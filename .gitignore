@@ -14,3 +14,4 @@ tweet_search_results/
 users/
 analysis/*
 cmp.py
+settings.ini

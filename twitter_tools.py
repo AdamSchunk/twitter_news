@@ -4,6 +4,7 @@ import sys
 import time
 import json
 import tweepy
+import configparser
 
 from os import listdir
 from os.path import isfile, join
@@ -15,11 +16,13 @@ from tweet_stream_listener import Tweet_Stream_Listener
 class Twitter_Tools(object):
 
 	def __init__(self):
+		config = configparser.ConfigParser()
+		config.read('settings.ini')
 		# Variables that contains the user credentials to access Twitter API
-		ACCESS_TOKEN = '860191806465744897-2FaIqC3FEjqc2BnhqNsjXuYN34AEjuR'
-		ACCESS_SECRET = '9rV4BEatXoOfPYoiUSvUgQ7zeRuevlQEQb6xux4FT2HKT'
-		CONSUMER_KEY = '82Md1jsxRDwx8kWD1BqKucpaZ'
-		CONSUMER_SECRET = 'zLLAeZ3LxfSJP8HSbuFg02Lo9V7aTqbPLuLfr1dp0Y8wwFa6Du'
+		ACCESS_TOKEN = config['TwitterAuth']['ACCESS_TOKEN']
+		ACCESS_SECRET = config['TwitterAuth']['ACCESS_SECRET']
+		CONSUMER_KEY = config['TwitterAuth']['CONSUMER_KEY']
+		CONSUMER_SECRET = config['TwitterAuth']['CONSUMER_SECRET']
 
 		auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 		auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
@@ -149,7 +152,7 @@ class Twitter_Tools(object):
 	def find_tweet_with_num_retweets(self, query, tweet_thresh):
 		StreamListener = Tweet_Stream_Listener(query, 0, tweet_thresh)
 		Stream = tweepy.Stream(auth=self.api.auth, listener=StreamListener)
-		Stream.filter(track=[query], async=True)
+		Stream.filter(track=[query])
 		Tweet = None
 
 		while True:
@@ -176,7 +179,7 @@ class Twitter_Tools(object):
 		self.tweet_parser.save_tweets_json(tweets, output_file)
 
 	def init_stream_search(self, search_term):
-		self.Stream.filter(lang="en", track=[search_term], async=True)
+		self.Stream.filter(lang="en", track=[search_term])
 
 	def search_past_tweets(self, seach_term):
 		tweet_iterator = tweepy.Cursor(self.api.search, q=seach_term, lang="en").items()
